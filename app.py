@@ -40,6 +40,7 @@ def translate_sign(sign):
 
 entries = []
 category_translation = {}
+biography_tree = {}
 
 for entry in root.findall("adb_entry"):
     aid = entry.get("adb_id")
@@ -65,21 +66,21 @@ for entry in root.findall("adb_entry"):
 
     sun_sign_raw = positions.get("sun_sign") if positions is not None else None
     sun_sign = translate_sign(sun_sign_raw)
-    sun_deg = extract_degree(positions.get("sun_degmin")) if positions is not None else None
     moon_sign_raw = positions.get("moon_sign") if positions is not None else None
     moon_sign = translate_sign(moon_sign_raw)
-    moon_deg = extract_degree(positions.get("moon_degmin")) if positions is not None else None
     asc_sign_raw = positions.get("asc_sign") if positions is not None else None
     asc_sign = translate_sign(asc_sign_raw)
-    asc_deg = extract_degree(positions.get("asc_degmin")) if positions is not None else None
 
     research_data = entry.find("research_data")
     raw_categories = []
+    tree_path = []
     if research_data is not None:
         cats = research_data.find("categories")
         if cats is not None:
             for cat in cats.findall("category"):
                 if cat.text:
+                    parts = cat.text.strip().split(" > ")
+                    tree_path.append(parts)
                     raw_categories.append(cat.text.strip())
 
     category_label = raw_categories[0] if raw_categories else "Без категории"
@@ -92,11 +93,23 @@ for entry in root.findall("adb_entry"):
         "Знак Солнца": sun_sign,
         "Знак Луны": moon_sign,
         "Знак Асцендента": asc_sign,
-        "Категория": category_label,
+        "Категории": tree_path,
         "Описание": bio
     })
 
+# Построение дерева категорий
+import collections
+
+def build_tree(paths):
+    tree = collections.defaultdict(dict)
+    for path in paths:
+        current = tree
+        for part in path:
+            current = current.setdefault(part, {})
+    return tree
+
 df = pd.DataFrame(entries)
+biography_tree = build_tree([cat for entry in entries for cat in entry["Категории"]])
 
 st.title("Фильтр по базе AstroDatabank")
 
@@ -108,7 +121,11 @@ with col2:
     selected_moon_sign = st.selectbox("Знак Луны", options=sign_options)
 with col3:
     selected_asc_sign = st.selectbox("Знак Асцендента", options=sign_options)
-    selected_category = st.selectbox("Категория", options=["Любая"] + sorted(df["Категория"].dropna().unique()))
+
+# Триуровневый фильтр биографии
+bio1 = st.selectbox("Биография: Уровень 1", ["Любой"] + sorted(biography_tree.keys()))
+bio2 = st.selectbox("Биография: Уровень 2", ["Любой"] + (sorted(biography_tree.get(bio1, {}).keys()) if bio1 != "Любой" else []))
+bio3 = st.selectbox("Биография: Уровень 3", ["Любой"] + (sorted(biography_tree.get(bio1, {}).get(bio2, {}).keys()) if bio2 != "Любой" else []))
 
 # Фильтрация
 filtered_df = df.copy()
@@ -120,8 +137,13 @@ if selected_moon_sign != "Любой":
     filtered_df = filtered_df[filtered_df["Знак Луны"] == selected_moon_sign]
 if selected_asc_sign != "Любой":
     filtered_df = filtered_df[filtered_df["Знак Асцендента"] == selected_asc_sign]
-if selected_category != "Любая":
-    filtered_df = filtered_df[filtered_df["Категория"] == selected_category]
+
+if bio1 != "Любой":
+    filtered_df = filtered_df[filtered_df["Категории"].apply(lambda cats: any(cat[:1] == [bio1] for cat in cats))]
+if bio2 != "Любой":
+    filtered_df = filtered_df[filtered_df["Категории"].apply(lambda cats: any(cat[:2] == [bio1, bio2] for cat in cats))]
+if bio3 != "Любой":
+    filtered_df = filtered_df[filtered_df["Категории"].apply(lambda cats: any(cat[:3] == [bio1, bio2, bio3] for cat in cats))]
 
 st.write(f"Найдено записей: {len(filtered_df)}")
 
@@ -137,5 +159,4 @@ with right:
     st.markdown(f"**Знак Солнца:** {person['Знак Солнца']}")
     st.markdown(f"**Знак Луны:** {person['Знак Луны']}")
     st.markdown(f"**Знак Асцендента:** {person['Знак Асцендента']}")
-    st.markdown(f"**Категория:** {person['Категория']}")
     st.markdown(f"**Описание:**\n{person['Описание']}")
