@@ -39,11 +39,7 @@ def translate_sign(sign):
     return sign_translate.get(sign, sign)
 
 entries = []
-categories_map = {
-    'спортсмен': ['Sports'],
-    'актёр': ['Actor', 'TV', 'Entertainment : Live Stage'],
-    'писатель': ['Writer', 'Autobiographer', 'Journalist', 'Poet', 'Fiction']
-}
+category_translation = {}
 
 for entry in root.findall("adb_entry"):
     aid = entry.get("adb_id")
@@ -53,6 +49,7 @@ for entry in root.findall("adb_entry"):
 
     rodden = public_data.findtext("roddenrating")
     name = public_data.findtext("name")
+    bio = public_data.findtext("bio") or ""
 
     date_str = bdata.findtext("date") if bdata is not None else None
     time_str = bdata.findtext("time") if bdata is not None else None
@@ -82,11 +79,8 @@ for entry in root.findall("adb_entry"):
                 if cat.text:
                     raw_categories.append(cat.text.strip())
 
-    matched_category = None
-    for ru_cat, eng_list in categories_map.items():
-        if any(cat in eng_list for cat in raw_categories):
-            matched_category = ru_cat
-            break
+    category_label = raw_categories[0] if raw_categories else "Без категории"
+    category_translation[category_label] = category_translation.get(category_label, category_label)
 
     entries.append({
         "Имя": name,
@@ -98,7 +92,8 @@ for entry in root.findall("adb_entry"):
         "Градус Луны": moon_deg,
         "Знак Асцендента": asc_sign,
         "Градус Асцендента": asc_deg,
-        "Категория": matched_category if matched_category else "Без категории"
+        "Категория": category_label,
+        "Описание": bio
     })
 
 df = pd.DataFrame(entries)
@@ -135,4 +130,8 @@ if selected_category != "Любая":
     filtered_df = filtered_df[filtered_df["Категория"] == selected_category]
 
 st.write(f"Найдено записей: {len(filtered_df)}")
-st.dataframe(filtered_df)
+
+for i, row in filtered_df.iterrows():
+    with st.expander(f"{row['Имя']} ({row['Дата рождения']})"):
+        st.markdown(f"**Категория:** {row['Категория']}  ")
+        st.markdown(f"**Описание:** {row['Описание']}")
