@@ -49,7 +49,6 @@ for entry in root.findall("adb_entry"):
     rodden = public_data.findtext("roddenrating")
     name = public_data.findtext("name")
 
-    # Новый способ извлечения даты и времени рождения
     date_str = bdata.findtext("date") if bdata is not None else None
     time_str = bdata.findtext("time") if bdata is not None else None
     if date_str and time_str:
@@ -57,7 +56,7 @@ for entry in root.findall("adb_entry"):
     elif date_str:
         birth_dt = date_str
     else:
-        birth_dt = None
+        birth_dt = ""
 
     sun_sign = positions.get("sun_sign") if positions is not None else None
     sun_deg = extract_degree(positions.get("sun_degmin")) if positions is not None else None
@@ -76,17 +75,21 @@ for entry in root.findall("adb_entry"):
                     raw_categories.append(cat.text.strip())
 
     entries.append({
-        "name": name,
-        "birth_dt": birth_dt,
-        "adb_id": aid,
-        "rodden": rodden,
-        "sun_sign": sun_sign,
-        "sun_deg": sun_deg,
-        "moon_sign": moon_sign,
-        "moon_deg": moon_deg,
-        "asc_sign": asc_sign,
-        "asc_deg": asc_deg,
-        "categories_raw": raw_categories
+        "Имя": name,
+        "Дата рождения": birth_dt,
+        "Рейтинг Роддена": rodden,
+        "Знак Солнца": translate_sign(sun_sign),
+        "Градус Солнца": sun_deg,
+        "Знак Луны": translate_sign(moon_sign),
+        "Градус Луны": moon_deg,
+        "Знак Асцендента": translate_sign(asc_sign),
+        "Градус Асцендента": asc_deg,
+        "Категория": raw_categories
     })
 
-...
+df = pd.DataFrame(entries)
+
+# Отображение
+st.title("Фильтр по базе AstroDatabank")
+st.write(f"Найдено записей: {len(df)}")
+st.dataframe(df)
