@@ -134,4 +134,7 @@ st.write(f"Найдено записей: {len(filtered_df)}")
 for i, row in filtered_df.iterrows():
     with st.expander(f"{row['Имя']} ({row['Дата рождения']})"):
         st.markdown(f"**Категория:** {row['Категория']}  ")
+        st.markdown(f"**Знак Солнца:** {row['Знак Солнца']} ({row['Градус Солнца']}°)  ")
+        st.markdown(f"**Знак Луны:** {row['Знак Луны']} ({row['Градус Луны']}°)  ")
+        st.markdown(f"**Знак Асцендента:** {row['Знак Асцендента']} ({row['Градус Асцендента']}°)  ")
         st.markdown(f"**Описание:** {row['Описание']}")
