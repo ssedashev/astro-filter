@@ -53,12 +53,15 @@ for entry in root.findall("adb_entry"):
 
     date_str = bdata.findtext("date") if bdata is not None else None
     time_str = bdata.findtext("time") if bdata is not None else None
+    place = bdata.findtext("place") if bdata is not None else None
     if date_str and time_str:
-        birth_dt = f"{date_str} {time_str}"
+        birth_dt = f"{date_str}, {time_str}"
     elif date_str:
         birth_dt = date_str
     else:
         birth_dt = ""
+
+    birth_place = place or ""
 
     sun_sign_raw = positions.get("sun_sign") if positions is not None else None
     sun_sign = translate_sign(sun_sign_raw)
@@ -84,14 +87,11 @@ for entry in root.findall("adb_entry"):
 
     entries.append({
         "Имя": name,
-        "Дата рождения": birth_dt,
+        "Дата и место рождения": f"{birth_dt}, {birth_place}".strip(', '),
         "Рейтинг Роддена": rodden,
         "Знак Солнца": sun_sign,
-        "Градус Солнца": sun_deg,
         "Знак Луны": moon_sign,
-        "Градус Луны": moon_deg,
         "Знак Асцендента": asc_sign,
-        "Градус Асцендента": asc_deg,
         "Категория": category_label,
         "Описание": bio
     })
@@ -104,13 +104,10 @@ col1, col2, col3 = st.columns(3)
 with col1:
     selected_rodden = st.selectbox("Рейтинг Роддена", options=["Любой"] + sorted(df["Рейтинг Роддена"].dropna().unique().tolist()), index=(sorted(df["Рейтинг Роддена"].dropna().unique().tolist()).index("AA") + 1 if "AA" in df["Рейтинг Роддена"].values else 0))
     selected_sun_sign = st.selectbox("Знак Солнца", options=sign_options)
-    selected_sun_deg_range = st.slider("Градус Солнца", min_value=degree_min, max_value=degree_max, value=(degree_min, degree_max))
 with col2:
     selected_moon_sign = st.selectbox("Знак Луны", options=sign_options)
-    selected_moon_deg_range = st.slider("Градус Луны", min_value=degree_min, max_value=degree_max, value=(degree_min, degree_max))
 with col3:
     selected_asc_sign = st.selectbox("Знак Асцендента", options=sign_options)
-    selected_asc_deg_range = st.slider("Градус Асцендента", min_value=degree_min, max_value=degree_max, value=(degree_min, degree_max))
     selected_category = st.selectbox("Категория", options=["Любая"] + sorted(df["Категория"].dropna().unique()))
 
 # Фильтрация
@@ -119,22 +116,26 @@ if selected_rodden != "Любой":
     filtered_df = filtered_df[filtered_df["Рейтинг Роддена"] == selected_rodden]
 if selected_sun_sign != "Любой":
     filtered_df = filtered_df[filtered_df["Знак Солнца"] == selected_sun_sign]
-filtered_df = filtered_df[filtered_df["Градус Солнца"].between(*selected_sun_deg_range)]
 if selected_moon_sign != "Любой":
     filtered_df = filtered_df[filtered_df["Знак Луны"] == selected_moon_sign]
-filtered_df = filtered_df[filtered_df["Градус Луны"].between(*selected_moon_deg_range)]
 if selected_asc_sign != "Любой":
     filtered_df = filtered_df[filtered_df["Знак Асцендента"] == selected_asc_sign]
-filtered_df = filtered_df[filtered_df["Градус Асцендента"].between(*selected_asc_deg_range)]
 if selected_category != "Любая":
     filtered_df = filtered_df[filtered_df["Категория"] == selected_category]
 
 st.write(f"Найдено записей: {len(filtered_df)}")
 
-for i, row in filtered_df.iterrows():
-    with st.expander(f"{row['Имя']} ({row['Дата рождения']})"):
-        st.markdown(f"**Категория:** {row['Категория']}  ")
-        st.markdown(f"**Знак Солнца:** {row['Знак Солнца']} ({row['Градус Солнца']}°)  ")
-        st.markdown(f"**Знак Луны:** {row['Знак Луны']} ({row['Градус Луны']}°)  ")
-        st.markdown(f"**Знак Асцендента:** {row['Знак Асцендента']} ({row['Градус Асцендента']}°)  ")
-        st.markdown(f"**Описание:** {row['Описание']}")
+left, right = st.columns([2, 3])
+
+with left:
+    selected_name = st.radio("Выберите человека:", filtered_df["Имя"].tolist())
+
+with right:
+    person = filtered_df[filtered_df["Имя"] == selected_name].iloc[0]
+    st.markdown(f"### {person['Имя']}")
+    st.markdown(f"**Дата и место рождения:** {person['Дата и место рождения']}")
+    st.markdown(f"**Знак Солнца:** {person['Знак Солнца']}")
+    st.markdown(f"**Знак Луны:** {person['Знак Луны']}")
+    st.markdown(f"**Знак Асцендента:** {person['Знак Асцендента']}")
+    st.markdown(f"**Категория:** {person['Категория']}")
+    st.markdown(f"**Описание:**\n{person['Описание']}")
