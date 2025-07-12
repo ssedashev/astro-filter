@@ -107,7 +107,7 @@ st.title("Фильтр по базе AstroDatabank")
 
 col1, col2, col3 = st.columns(3)
 with col1:
-    selected_rodden = st.selectbox("Рейтинг Роддена", options=["Любой"] + sorted(df["Рейтинг Роддена"].dropna().unique().tolist()))
+    selected_rodden = st.selectbox("Рейтинг Роддена", options=["Любой"] + sorted(df["Рейтинг Роддена"].dropna().unique().tolist()), index=(sorted(df["Рейтинг Роддена"].dropna().unique().tolist()).index("AA") + 1 if "AA" in df["Рейтинг Роддена"].values else 0))
     selected_sun_sign = st.selectbox("Знак Солнца", options=sign_options)
     selected_sun_deg_range = st.slider("Градус Солнца", min_value=degree_min, max_value=degree_max, value=(degree_min, degree_max))
 with col2:
