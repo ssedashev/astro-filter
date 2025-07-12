@@ -98,7 +98,7 @@ for entry in root.findall("adb_entry"):
         "Градус Луны": moon_deg,
         "Знак Асцендента": asc_sign,
         "Градус Асцендента": asc_deg,
-        "Категория": matched_category if matched_category else ""
+        "Категория": matched_category if matched_category else "Без категории"
     })
 
 df = pd.DataFrame(entries)
