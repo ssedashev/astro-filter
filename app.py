@@ -116,7 +116,7 @@ with col2:
 with col3:
     selected_asc_sign = st.selectbox("Знак Асцендента", options=sign_options)
     selected_asc_deg_range = st.slider("Градус Асцендента", min_value=degree_min, max_value=degree_max, value=(degree_min, degree_max))
-    selected_category = st.selectbox("Категория", options=["Любая"] + list(categories_map.keys()))
+    selected_category = st.selectbox("Категория", options=["Любая"] + sorted(df["Категория"].dropna().unique()))
 
 # Фильтрация
 filtered_df = df.copy()
