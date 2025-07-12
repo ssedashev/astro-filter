@@ -25,6 +25,11 @@ sign_translate = {
     'sag': 'Стрелец', 'cap': 'Козерог', 'aqu': 'Водолей', 'pis': 'Рыбы'
 }
 
+reverse_sign_translate = {v: k for k, v in sign_translate.items()}
+
+sign_options = ["Любой"] + list(sign_translate.values())
+degree_options = list(range(1, 31))
+
 def translate_sign(sign):
     if not sign:
         return ""
@@ -58,11 +63,14 @@ for entry in root.findall("adb_entry"):
     else:
         birth_dt = ""
 
-    sun_sign = positions.get("sun_sign") if positions is not None else None
+    sun_sign_raw = positions.get("sun_sign") if positions is not None else None
+    sun_sign = translate_sign(sun_sign_raw)
     sun_deg = extract_degree(positions.get("sun_degmin")) if positions is not None else None
-    moon_sign = positions.get("moon_sign") if positions is not None else None
+    moon_sign_raw = positions.get("moon_sign") if positions is not None else None
+    moon_sign = translate_sign(moon_sign_raw)
     moon_deg = extract_degree(positions.get("moon_degmin")) if positions is not None else None
-    asc_sign = positions.get("asc_sign") if positions is not None else None
+    asc_sign_raw = positions.get("asc_sign") if positions is not None else None
+    asc_sign = translate_sign(asc_sign_raw)
     asc_deg = extract_degree(positions.get("asc_degmin")) if positions is not None else None
 
     research_data = entry.find("research_data")
@@ -78,18 +86,50 @@ for entry in root.findall("adb_entry"):
         "Имя": name,
         "Дата рождения": birth_dt,
         "Рейтинг Роддена": rodden,
-        "Знак Солнца": translate_sign(sun_sign),
+        "Знак Солнца": sun_sign,
         "Градус Солнца": sun_deg,
-        "Знак Луны": translate_sign(moon_sign),
+        "Знак Луны": moon_sign,
         "Градус Луны": moon_deg,
-        "Знак Асцендента": translate_sign(asc_sign),
+        "Знак Асцендента": asc_sign,
         "Градус Асцендента": asc_deg,
         "Категория": raw_categories
     })
 
 df = pd.DataFrame(entries)
 
-# Отображение
 st.title("Фильтр по базе AstroDatabank")
-st.write(f"Найдено записей: {len(df)}")
-st.dataframe(df)
+
+col1, col2, col3 = st.columns(3)
+with col1:
+    selected_rodden = st.selectbox("Рейтинг Роддена", options=["Любой"] + sorted(df["Рейтинг Роддена"].dropna().unique().tolist()))
+    selected_sun_sign = st.selectbox("Знак Солнца", options=sign_options)
+    selected_sun_deg = st.select_slider("Градус Солнца", options=["Любой"] + degree_options)
+with col2:
+    selected_moon_sign = st.selectbox("Знак Луны", options=sign_options)
+    selected_moon_deg = st.select_slider("Градус Луны", options=["Любой"] + degree_options)
+with col3:
+    selected_asc_sign = st.selectbox("Знак Асцендента", options=sign_options)
+    selected_asc_deg = st.select_slider("Градус Асцендента", options=["Любой"] + degree_options)
+    selected_category = st.selectbox("Категория", options=["Любая"] + list(categories_map.keys()))
+
+# Фильтрация
+filtered_df = df.copy()
+if selected_rodden != "Любой":
+    filtered_df = filtered_df[filtered_df["Рейтинг Роддена"] == selected_rodden]
+if selected_sun_sign != "Любой":
+    filtered_df = filtered_df[filtered_df["Знак Солнца"] == selected_sun_sign]
+if selected_sun_deg != "Любой":
+    filtered_df = filtered_df[filtered_df["Градус Солнца"] == selected_sun_deg]
+if selected_moon_sign != "Любой":
+    filtered_df = filtered_df[filtered_df["Знак Луны"] == selected_moon_sign]
+if selected_moon_deg != "Любой":
+    filtered_df = filtered_df[filtered_df["Градус Луны"] == selected_moon_deg]
+if selected_asc_sign != "Любой":
+    filtered_df = filtered_df[filtered_df["Знак Асцендента"] == selected_asc_sign]
+if selected_asc_deg != "Любой":
+    filtered_df = filtered_df[filtered_df["Градус Асцендента"] == selected_asc_deg]
+if selected_category != "Любая":
+    filtered_df = filtered_df[filtered_df["Категория"].apply(lambda lst: selected_category in lst)]
+
+st.write(f"Найдено записей: {len(filtered_df)}")
+st.dataframe(filtered_df)
