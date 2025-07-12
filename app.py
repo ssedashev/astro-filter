@@ -21,6 +21,13 @@ def extract_degree(degmin):
     except:
         return None
 
+# --- Словарь для перевода знаков ---
+sign_translate = {
+    'ari': 'Овен', 'tau': 'Телец', 'gem': 'Близнецы', 'can': 'Рак',
+    'leo': 'Лев', 'vir': 'Дева', 'lib': 'Весы', 'sco': 'Скорпион',
+    'sag': 'Стрелец', 'cap': 'Козерог', 'aqu': 'Водолей', 'pis': 'Рыбы'
+}
+
 # --- Сбор основной информации из каждого adb_entry ---
 entries = []
 categories_map = {
@@ -82,27 +89,38 @@ df["main_category"] = df["categories_raw"].apply(label_category)
 # --- Интерфейс ---
 st.title("Фильтр по базе AstroDatabank")
 
+sign_options = ['Любой'] + sorted(df["sun_sign"].dropna().unique())
+sign_display = {'Любой': 'Любой'}
+sign_display.update({k: sign_translate.get(k, k) for k in df["sun_sign"].dropna().unique()})
+
 col1, col2, col3 = st.columns(3)
 with col1:
-    rodden_opt = st.selectbox("Рейтинг Роддена", sorted(df["rodden"].dropna().unique()))
-    sun_sign_opt = st.selectbox("Знак Солнца", sorted(df["sun_sign"].dropna().unique()))
-    sun_deg_opt = st.slider("Градус Солнца", 0, 29, 0)
+    rodden_opt = st.selectbox("Рейтинг Роддена", ['Любой'] + sorted(df["rodden"].dropna().unique()))
+    sun_sign_opt = st.selectbox("Знак Солнца", options=sign_options, format_func=lambda x: sign_display.get(x, x))
+    sun_deg_opt = st.slider("Градус Солнца", 0, 29, (0, 29))
 with col2:
-    moon_sign_opt = st.selectbox("Знак Луны", sorted(df["moon_sign"].dropna().unique()))
-    moon_deg_opt = st.slider("Градус Луны", 0, 29, 0)
-    category_opt = st.selectbox("Категория", ["спортсмен", "актёр", "писатель"])
+    moon_sign_opt = st.selectbox("Знак Луны", options=sign_options, format_func=lambda x: sign_display.get(x, x))
+    moon_deg_opt = st.slider("Градус Луны", 0, 29, (0, 29))
+    category_opt = st.selectbox("Категория", ['Любой', 'спортсмен', 'актёр', 'писатель'])
 with col3:
-    asc_sign_opt = st.selectbox("Знак Асцендента", sorted(df["asc_sign"].dropna().unique()))
-    asc_deg_opt = st.slider("Градус Асцендента", 0, 29, 0)
+    asc_sign_opt = st.selectbox("Знак Асцендента", options=sign_options, format_func=lambda x: sign_display.get(x, x))
+    asc_deg_opt = st.slider("Градус Асцендента", 0, 29, (0, 29))
 
 # --- Фильтрация ---
-filtered = df[
-    (df["rodden"] == rodden_opt) &
-    (df["sun_sign"] == sun_sign_opt) & (df["sun_deg"] == sun_deg_opt) &
-    (df["moon_sign"] == moon_sign_opt) & (df["moon_deg"] == moon_deg_opt) &
-    (df["asc_sign"] == asc_sign_opt) & (df["asc_deg"] == asc_deg_opt) &
-    (df["main_category"] == category_opt)
-]
+filtered = df.copy()
+if rodden_opt != 'Любой':
+    filtered = filtered[filtered["rodden"] == rodden_opt]
+if sun_sign_opt != 'Любой':
+    filtered = filtered[(filtered["sun_sign"] == sun_sign_opt) &
+                        (filtered["sun_deg"] >= sun_deg_opt[0]) & (filtered["sun_deg"] <= sun_deg_opt[1])]
+if moon_sign_opt != 'Любой':
+    filtered = filtered[(filtered["moon_sign"] == moon_sign_opt) &
+                        (filtered["moon_deg"] >= moon_deg_opt[0]) & (filtered["moon_deg"] <= moon_deg_opt[1])]
+if asc_sign_opt != 'Любой':
+    filtered = filtered[(filtered["asc_sign"] == asc_sign_opt) &
+                        (filtered["asc_deg"] >= asc_deg_opt[0]) & (filtered["asc_deg"] <= asc_deg_opt[1])]
+if category_opt != 'Любой':
+    filtered = filtered[filtered["main_category"] == category_opt]
 
 # --- Результат ---
 st.subheader("Результаты фильтрации")
